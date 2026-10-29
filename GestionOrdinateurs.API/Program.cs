@@ -10,6 +10,9 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection manquante");
+
 builder.Services.AddControllers();
 builder.Services.AddDbContext<ParcInformatiqueContext>();
 builder.Services.AddScoped<IOrdinateurService, OrdinateurService>();
@@ -19,11 +22,14 @@ builder.Services.AddSingleton<StockService>();
 builder.Services.AddSingleton<JournalService>();
 builder.Services.AddOpenApi();
 
+var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
+    ?? ["http://localhost:5189"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", policy =>
     {
-        policy.WithOrigins("http://localhost:5189")
+        policy.WithOrigins(corsOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -120,7 +126,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!builder.Configuration.GetValue<bool>("DOTNET_RUNNING_IN_CONTAINER"))
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors("AllowBlazorClient");
 app.UseAuthentication();
 app.UseAuthorization();

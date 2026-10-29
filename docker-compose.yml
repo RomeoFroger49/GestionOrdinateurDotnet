@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d GestionOrdinateursDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       - appnet
 
@@ -41,12 +46,73 @@ services:
       dockerfile: AuthentificationApi/Dockerfile
     container_name: authentification_api
     ports:
-      - "5157:5157"
+      - "5021:5021"
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:5157
+      ASPNETCORE_URLS: http://+:5021
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=GestionOrdinateursDb;Username=user;Password=1234"
     depends_on:
-      - postgres
-      - keycloak
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
     networks:
       - appnet
+
+  gestionordinateurs-api:
+    image: ${DOCKER_ACCOUNT}/gestionordinateursapi:latest
+    build:
+      context: .
+      dockerfile: GestionOrdinateurs.API/Dockerfile
+    container_name: gestionordinateurs_api
+    ports:
+      - "5087:5087"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5087
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=GestionOrdinateursDb;Username=user;Password=1234"
+      Cors__Origins__0: "http://localhost:5189"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - appnet
+
+  gestionordinateurs-gateway:
+    image: ${DOCKER_ACCOUNT}/gestionordinateursgateway:latest
+    build:
+      context: .
+      dockerfile: GestionOrdinateurs.Gateway/Dockerfile
+    container_name: gestionordinateurs_gateway
+    ports:
+      - "5010:5010"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5010
+      ReverseProxy__Clusters__cluster-gestion-api__Destinations__gestion-api__Address: "http://gestionordinateurs-api:5087/"
+    depends_on:
+      - gestionordinateurs-api
+    networks:
+      - appnet
+
+  gestionordinateurs-client:
+    image: ${DOCKER_ACCOUNT}/gestionordinateursclient:latest
+    build:
+      context: .
+      dockerfile: GestionOrdinateurs.Client/Dockerfile
+    container_name: gestionordinateurs_client
+    ports:
+      - "5189:5189"
+    depends_on:
+      - gestionordinateurs-gateway
+      - authentification-api
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  keycloak_data:
