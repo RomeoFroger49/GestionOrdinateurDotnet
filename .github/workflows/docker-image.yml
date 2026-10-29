@@ -63,4 +63,3 @@ jobs:
       - name: Push AuthentificationApi
         run: docker push ${{ env.DOCKER_REGISTRY }}/authentificationapi:latest
 		
-	  # .... Les autres projets à pousser sous docker (à vous de reflechir sur ceux à poursser)
