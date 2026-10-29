@@ -14,7 +14,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection manquante");
 
 builder.Services.AddControllers();
-builder.Services.AddDbContext<ParcInformatiqueContext>();
+builder.Services.AddDbContext<ParcInformatiqueContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<IOrdinateurService, OrdinateurService>();
 builder.Services.AddScoped<IReparationService, ReparationService>();
 builder.Services.AddScoped<IUserService, UserService>();

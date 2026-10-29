@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-  <Content Include="parcinfo.db">
+  <Content Include="ParcInformatique.db">
     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
   </Content>
 </ItemGroup>
