@@ -6,26 +6,29 @@ on:
     branches:
       - main
 
+env:
+  DOCKER_REGISTRY: ${{ secrets.DOCKER_ACCOUNT }}
+
 jobs:
 
   tests:
     runs-on: ubuntu-latest
-
+  
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
-
+  
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/checkout@v5.0.1
         with:
           dotnet-version: '10.0.x'
-
+  
       - name: Restore
         run: dotnet restore
-
+  
       - name: Build solution
         run: dotnet build --no-restore
-
+  
       - name: Run tests
         run: dotnet test MonprojetTest.Tests/MonprojetTest.Tests.csproj --no-build --verbosity normal
 
@@ -34,24 +37,29 @@ jobs:
     needs: tests
     environment: dev
 
-    env:
-      DOCKER_REGISTRY: ${{ secrets.DOCKER_ACCOUNT }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.1
+        with: 
+            repository: '${{ github.repository }}'
+            token: '${{ github.token }}'
 
       - name: Login Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
+        
       - name: Afficher l'arborescence
         run: |
-          pwd
-          ls -la
-          find . -name Dockerfile
+         pwd
+         ls -la
+         find . -name Dockerfile
+    
+      #################################################
+      # AuthentificationApi
+      #################################################
 
       - name: Build AuthentificationApi
         run: docker build -t ${{ env.DOCKER_REGISTRY }}/authentificationapi:latest -f AuthentificationApi/Dockerfile .
 
       - name: Push AuthentificationApi
         run: docker push ${{ env.DOCKER_REGISTRY }}/authentificationapi:latest
+		
