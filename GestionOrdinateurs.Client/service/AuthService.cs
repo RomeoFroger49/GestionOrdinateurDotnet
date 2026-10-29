@@ -1,38 +1,55 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using Blazored.SessionStorage;
-using GestionOrdinateurs.Shared.Models;
 
 namespace GestionOrdinateurs.Client.Services;
 
-public record TokenResponse(string Token, DateTime Expiration);
+public class KeycloakTokenResponse
+{
+    [JsonPropertyName("access_token")]
+    public string AccessToken { get; set; } = string.Empty;
+
+    [JsonPropertyName("expires_in")]
+    public int ExpiresIn { get; set; }
+
+    [JsonPropertyName("refresh_token")]
+    public string RefreshToken { get; set; } = string.Empty;
+}
 
 public class AuthService(IHttpClientFactory httpClientFactory, ISessionStorageService sessionStorage, JwtAuthenticationStateProvider authProvider)
 {
-    public async Task<string?> ConnecterAsync(string login)
+    public async Task<string?> ConnecterAsync(string login, string motDePasse)
     {
         if (string.IsNullOrWhiteSpace(login))
             return "Veuillez saisir un utilisateur.";
 
+        if (string.IsNullOrWhiteSpace(motDePasse))
+            return "Veuillez saisir un mot de passe.";
+
         try
         {
-            var apiOrdinateurs = httpClientFactory.CreateClient("ApiOrdinateurs");
-            var reponseUser = await apiOrdinateurs.GetAsync($"api/Users/{Uri.EscapeDataString(login)}");
-
-            if (reponseUser.StatusCode == HttpStatusCode.NotFound)
-                return $"L'utilisateur « {login} » n'existe pas.";
-
-            reponseUser.EnsureSuccessStatusCode();
-            var user = await reponseUser.Content.ReadFromJsonAsync<User>();
-
             var apiAuth = httpClientFactory.CreateClient("ApiAuth");
-            var reponseToken = await apiAuth.PostAsync(
-                $"api/Authentification/login?login={Uri.EscapeDataString(user!.Login)}&role={user.Role}", null);
+            var reponse = await apiAuth.PostAsJsonAsync("api/Auth/login", new
+            {
+                username = login,
+                password = motDePasse
+            });
 
-            reponseToken.EnsureSuccessStatusCode();
-            var resultat = await reponseToken.Content.ReadFromJsonAsync<TokenResponse>();
+            if (reponse.StatusCode == HttpStatusCode.Unauthorized)
+                return "Identifiant ou mot de passe incorrect.";
 
-            await sessionStorage.SetItemAsync("token", resultat!.Token);
+            if (reponse.StatusCode == HttpStatusCode.ServiceUnavailable)
+                return "Le serveur d'authentification (Keycloak) est injoignable.";
+
+            reponse.EnsureSuccessStatusCode();
+
+            var resultat = await reponse.Content.ReadFromJsonAsync<KeycloakTokenResponse>();
+
+            if (string.IsNullOrWhiteSpace(resultat?.AccessToken))
+                return "Réponse invalide du serveur d'authentification.";
+
+            await sessionStorage.SetItemAsync("token", resultat.AccessToken);
             authProvider.NotifierConnexion();
 
             return null;

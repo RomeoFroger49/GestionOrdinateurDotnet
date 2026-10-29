@@ -7,14 +7,21 @@
 
 <h3>Connexion</h3>
 
-<div class="mb-3" style="max-width: 400px;">
-    <label class="form-label" for="login">Utilisateur</label>
-    <input id="login" class="form-control" @bind="login" @bind:event="oninput" placeholder="user1" />
-</div>
+<form @onsubmit="Connecter" style="max-width: 400px;">
+    <div class="mb-3">
+        <label class="form-label" for="login">Utilisateur</label>
+        <input id="login" class="form-control" @bind="login" @bind:event="oninput" placeholder="user1" autocomplete="username" />
+    </div>
 
-<button class="btn btn-primary" @onclick="Connecter" disabled="@enCours">
-    @(enCours ? "Connexion..." : "Connecter")
-</button>
+    <div class="mb-3">
+        <label class="form-label" for="motDePasse">Mot de passe</label>
+        <input id="motDePasse" type="password" class="form-control" @bind="motDePasse" @bind:event="oninput" autocomplete="current-password" />
+    </div>
+
+    <button type="submit" class="btn btn-primary" disabled="@enCours">
+        @(enCours ? "Connexion..." : "Connecter")
+    </button>
+</form>
 
 @if (erreur is not null)
 {
@@ -23,13 +30,14 @@
 
 @code {
     private string login = "";
+    private string motDePasse = "";
     private string? erreur;
     private bool enCours;
 
     private async Task Connecter()
     {
         enCours = true;
-        erreur = await AuthService.ConnecterAsync(login);
+        erreur = await AuthService.ConnecterAsync(login, motDePasse);
         enCours = false;
 
         if (erreur is null)
