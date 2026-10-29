@@ -1,0 +1,40 @@
+@page "/login"
+@using GestionOrdinateurs.Client.Services
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Connexion</PageTitle>
+
+<h3>Connexion</h3>
+
+<div class="mb-3" style="max-width: 400px;">
+    <label class="form-label" for="login">Utilisateur</label>
+    <input id="login" class="form-control" @bind="login" @bind:event="oninput" placeholder="user1" />
+</div>
+
+<button class="btn btn-primary" @onclick="Connecter" disabled="@enCours">
+    @(enCours ? "Connexion..." : "Connecter")
+</button>
+
+@if (erreur is not null)
+{
+    <div class="alert alert-danger mt-3" style="max-width: 400px;">@erreur</div>
+}
+
+@code {
+    private string login = "";
+    private string? erreur;
+    private bool enCours;
+
+    private async Task Connecter()
+    {
+        enCours = true;
+        erreur = await AuthService.ConnecterAsync(login);
+        enCours = false;
+
+        if (erreur is null)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+}

@@ -1,0 +1,56 @@
+@page "/ordinateurs"
+@attribute [Authorize]
+@using GestionOrdinateurs.Client.Models
+@using GestionOrdinateurs.Client.Services
+@inject OrdinateurApiService Api
+
+<PageTitle>Ordinateurs</PageTitle>
+
+<h3>Liste des ordinateurs</h3>
+
+@if (erreur is not null)
+{
+    <div class="alert alert-danger">@erreur</div>
+}
+else if (ordinateurs is null)
+{
+    <p><em>Chargement...</em></p>
+}
+else if (ordinateurs.Count == 0)
+{
+    <p>Aucun ordinateur dans le parc.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Prix</th>
+                <th>Devise</th>
+                <th>Vendu</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ordinateur in ordinateurs)
+            {
+                <tr>
+                    <td>@ordinateur.Nom</td>
+                    <td>@ordinateur.Prix</td>
+                    <td>@ordinateur.Devise</td>
+                    <td>@(ordinateur.Vendu ? "Oui" : "Non")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<OrdinateurListeDto>? ordinateurs;
+    private string? erreur;
+
+    protected override async Task OnInitializedAsync()
+    {
+        (ordinateurs, erreur) = await Api.GetOrdinateursAsync();
+    }
+}

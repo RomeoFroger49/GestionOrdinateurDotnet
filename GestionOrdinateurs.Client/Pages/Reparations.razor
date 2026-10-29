@@ -1,0 +1,56 @@
+@page "/reparations"
+@attribute [Authorize]
+@using GestionOrdinateurs.Client.Services
+@using GestionOrdinateurs.Shared.Models
+@inject OrdinateurApiService Api
+
+<PageTitle>Réparations</PageTitle>
+
+<h3>Historique des réparations</h3>
+
+@if (erreur is not null)
+{
+    <div class="alert alert-danger">@erreur</div>
+}
+else if (historique is null)
+{
+    <p><em>Chargement...</em></p>
+}
+else if (historique.Count == 0)
+{
+    <p>Aucune réparation enregistrée.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Ordinateur</th>
+                <th>Type de réparation</th>
+                <th>Technicien</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var reparation in historique)
+            {
+                <tr>
+                    <td>@reparation.NomOrdinateur</td>
+                    <td>@reparation.TypeReparation</td>
+                    <td>@reparation.Technicien</td>
+                    <td>@reparation.DateIntervention.ToString("dd/MM/yyyy HH:mm")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<HistoriqueReparationRecord>? historique;
+    private string? erreur;
+
+    protected override async Task OnInitializedAsync()
+    {
+        (historique, erreur) = await Api.GetHistoriqueAsync();
+    }
+}
